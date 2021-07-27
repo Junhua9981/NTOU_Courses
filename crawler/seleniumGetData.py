@@ -12,14 +12,13 @@ from time import sleep
 import json
 
 faculities = {}
+courses=[]
 
 def setupBrowser(useProxy):
     opts = Options()
 
     opts.add_argument("--incognito")  # 無痕模式
-    #User_Agent = 'Mozilla/5.0 (X11; CrOS i686 4319.74.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.57 Safari/537.36'
 
-    #ua = UserAgent()                  # fake UA 
     user_agent = 'Mozilla/5.0 (X11; CrOS i686 4319.74.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.57 Safari/537.36'
     opts.add_argument(f"user-agent={user_agent}")
 
@@ -30,7 +29,7 @@ def setupBrowser(useProxy):
         opts.add_argument(f'--proxy-server={useProxy}://'+proxyIP+':'+proxyPort)
 
     browser = webdriver.Chrome(
-        r'D:\Download\NCNU_Course-master\NTOU\chromedriver.exe', chrome_options=opts)
+        r'crawler\chromedriver.exe', chrome_options=opts)
     return browser
 
 
@@ -109,7 +108,7 @@ def setRows(browser):
     """
     inRows = browser.find_element_by_xpath('//*[@id="PC_PageSize"]')
     inRows.send_keys(Keys.CONTROL + "a")  # 只要數值為空網頁就會一直alert卡死== 只好這樣寫
-    inRows.send_keys(('200'))
+    inRows.send_keys('2350')          #全部2341
     inRows.send_keys(Keys.ENTER)
 
 
@@ -120,8 +119,8 @@ def getCourseData(soup):
     Args:
         soup (bs4ed soup): mainURL's page source
     """
-    courses=[]
 
+    global courses
     clazzNames = soup.find(
         id="grid-scroll").find('div').find('table').find_all('tr')
     clazzNames = clazzNames[1:]
@@ -173,8 +172,7 @@ def getCourseData(soup):
         courses.append(courseObj)
         
         rows -= 1
-    with open('output.json', 'w', encoding='utf8') as fp:
-        json.dump(courses, fp, ensure_ascii=False)
+    
 
 def printFaculity(dct):
     print('科系:')
@@ -189,8 +187,9 @@ if __name__ == "__main__":
     useProxy=str(input('Wut type Proxy:'))
     browser = setupBrowser(useProxy=useProxy)
 
+    #get SessionID cookies
     browser.get(r'https://ais.ntou.edu.tw/outside.aspx?mainPage=LwBBAHAAcABsAGkAYwBhAHQAaQBvAG4ALwBUAEsARQAvAFQASwBFADIAMgAvAFQASwBFADIAMgAyADAAXwAwADEALgBhAHMAcAB4AA==')
-
+    
     mainURL = r"https://ais.ntou.edu.tw/Application/TKE/TKE22/TKE2220_01.aspx"
     browser.get(mainURL)
 
@@ -198,38 +197,55 @@ if __name__ == "__main__":
 
     setYear(browser=browser)
     sleep(1)
+    setRows(browser=browser)
+    sleep(1)
 
-    soup = bs(browser.page_source)
-    getFaculty(soup=soup)
+    #soup = bs(browser.page_source)
+    getFaculty(soup=bs(browser.page_source,'lxml'))
     printFaculity(faculities)
 
-
+    try:
+        element = WebDriverWait(browser, 60).until(
+            EC.presence_of_element_located(
+                (By.XPATH, r'//*[@id="DataGrid"]/tbody/tr[1]'))
+        )
+    finally:
+        print("Render Page Success")
+    #soup = bs(browser.page_source, 'lxml')
+    getCourseData(soup=bs(browser.page_source, 'lxml'))
+    sleep(2)
 
     #faculity = str(input('Faculity:'))
-    #del faculities['全部']
-
-    for faculity, facName in sorted(faculities.items()):
-        print('faculity'+ faculity + ' '+ facName)
-        selectFaculity(browser=browser, faculty=faculity)
-        sleep(2)
-
-        # browser.implicitly_wait(10)
-        # sleep(2)
-        setRows(browser=browser)
-        sleep(1)
-
-        try:
-            element = WebDriverWait(browser, 15).until(
-                EC.presence_of_element_located(
-                    (By.XPATH, r'//*[@id="DataGrid"]/tbody/tr[1]'))
-            )
-        finally:
-            print("Render Page Success")
 
 
-
-        soup = bs(browser.page_source, 'lxml')
-        getCourseData(soup)
-        sleep(2)
+#    for faculity, facName in sorted(faculities.items()): 
+#        print('faculity'+ faculity + ' '+ facName)
+#        selectFaculity(browser=browser, faculty=faculity)
+#        sleep(2)
+#
+#        # browser.implicitly_wait(10)
+#        # sleep(2)
+#        setRows(browser=browser)
+#        sleep(1)
+#
+#        try:
+#            element = WebDriverWait(browser, 15).until(
+#                EC.presence_of_element_located(
+#                    (By.XPATH, r'//*[@id="DataGrid"]/tbody/tr[1]'))
+#            )
+#        finally:
+#            print("Render Page Success")
+#
+#
+#
+#        #soup = bs(browser.page_source, 'lxml')
+#        getCourseData(soup=bs(browser.page_source, 'lxml'))
+#        sleep(2)
     # print(soup)
 
+
+
+    with open('output.json', 'w', encoding='utf8') as fp:
+        json.dump(courses, fp, ensure_ascii=False)
+
+    print(len(courses))
