@@ -158,7 +158,7 @@ def getCourseData(soup):
             courseObj['sorting'] = td[2+expidx].string
 
         print(
-            f"{courseObj['number']} | {courseObj['name']} | {courseObj['department']} | {courseObj['department']} | {courseObj['grade']} | {courseObj['class']} | {courseObj['professor']} | {courseObj['place']} | {courseObj['time']} | {courseObj['sorting']}")
+            f"{courseObj['number']} | {courseObj['name']} | {courseObj['department']} | {courseObj['grade']} | {courseObj['class']} | {courseObj['professor']} | {courseObj['place']} | {courseObj['time']} | {courseObj['sorting']}")
 
     #    if td[2+expidx].string == '通':
     #        print(
